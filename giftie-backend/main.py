@@ -9,6 +9,12 @@ class Friend(BaseModel):
     name: str
     birthday: date
 
+class GiftRequest(BaseModel):
+    name: str
+    birthday: date
+    sentiment: str  # e.g., "secret crush", "mentor"
+    
+
 # TEMPORARY in-memory store
 db: List[Friend] = []
 
@@ -20,3 +26,47 @@ def add_friend(friend: Friend):
 @app.get("/api/friends")
 def get_friends():
     return db
+
+@app.post("/api/suggest-gift")
+def suggest_gift(request: GiftRequest):
+    name = request.name
+    sentiment = request.sentiment
+
+    # Suggest based on sentiment
+    suggestions = {
+        "close friend": [
+            "Custom bracelet with initials",
+            "Matching tote bag",
+            "Spa night kit"
+        ],
+        "secret crush": [
+            "Cute card with hint",
+            "Floral-scented perfume",
+            "Minimalist jewelry"
+        ],
+        "mentor": [
+            "Thank-you candle",
+            "Elegant pen",
+            "Notebook with quote"
+        ],
+        "admired dancer": [
+            "Fan art sketch",
+            "Stage flowers",
+            "Handwritten note + ribbon"
+        ],
+        # default fallback
+        "default": [
+            "Socks with their initials",
+            "Dancewear store voucher"
+        ]
+    }
+
+    options = suggestions.get(sentiment.lower(), suggestions["default"])
+    suggestion = random.choice(options)
+
+    return {
+        "recipient": name,
+        "sentiment": sentiment,
+        "suggested_gift": suggestion
+    }
+

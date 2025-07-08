@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 export default function FriendsListScreen() {
-  const [friends, setFriends] = useState([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFriends = async () => {
@@ -23,6 +31,38 @@ export default function FriendsListScreen() {
     fetchFriends();
   }, []);
 
+interface Friend {
+    name: string;
+    birthday: string;
+}
+
+interface GiftSuggestionResponse {
+    recipient: string;
+    suggested_gift: string;
+}
+
+const suggestGift = async (friend: Friend): Promise<void> => {
+    try {
+        const res = await fetch('https://64d8b695c546.ngrok-free.app/api/suggest-gift', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: friend.name,
+                birthday: friend.birthday,
+                sentiment: 'close friend', // 🔧 Temporary placeholder
+            }),
+        });
+
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        const data: GiftSuggestionResponse = await res.json();
+
+        Alert.alert(`Gift for ${data.recipient}`, `🎁 ${data.suggested_gift}`);
+    } catch (err) {
+        console.error('Suggest error:', err);
+        Alert.alert('Error', 'Could not suggest a gift.');
+    }
+};
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>👯 Friends</Text>
@@ -36,8 +76,13 @@ export default function FriendsListScreen() {
           keyExtractor={(item, index) => `${item.name}-${index}`}
           renderItem={({ item }) => (
             <View style={styles.friendItem}>
-              <Text style={styles.friendName}>{item.name}</Text>
-              <Text style={styles.friendBirthday}>🎂 {item.birthday}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.friendName}>{item.name}</Text>
+                <Text style={styles.friendBirthday}>🎂 {item.birthday}</Text>
+              </View>
+              <TouchableOpacity style={styles.button} onPress={() => suggestGift(item)}>
+                <Text style={styles.buttonText}>Suggest Gift</Text>
+              </TouchableOpacity>
             </View>
           )}
         />
@@ -51,10 +96,20 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
   empty: { fontSize: 16, color: '#888' },
   friendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderBottomWidth: 1,
     borderColor: '#eee',
     paddingVertical: 10,
+    gap: 12,
   },
   friendName: { fontSize: 18 },
   friendBirthday: { fontSize: 14, color: '#666' },
+  button: {
+    backgroundColor: '#007aff',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  buttonText: { color: '#fff', fontWeight: 'bold' },
 });
