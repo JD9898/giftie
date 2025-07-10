@@ -1,3 +1,4 @@
+import random
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List
@@ -62,6 +63,11 @@ def suggest_gift(request: GiftRequest):
     }
 
     options = suggestions.get(sentiment.lower(), suggestions["default"])
+    print("Options:", options)
+    print("About to choose with random.choice")
+    gifts = ["gift 1", "gift 2", "gift 3"]
+    print(random.choice(gifts))
+
     suggestion = random.choice(options)
 
     return {

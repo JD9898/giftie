@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules/
+giftie-backend/env/
 
 # Expo
 .expo/
