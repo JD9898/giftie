@@ -1,15 +1,24 @@
+import { useNavigation } from '@react-navigation/native';
+import { Link } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import { BACKEND_URL } from './import-contacts';
+
+type RootStackParamList = {
+  FriendHistory: { name: string };
+  // add other routes if needed
+};
 
 export default function FriendsListScreen() {
+  const navigation = useNavigation<import('@react-navigation/native').NavigationProp<RootStackParamList>>();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,37 +40,54 @@ export default function FriendsListScreen() {
     fetchFriends();
   }, []);
 
-interface Friend {
+  interface Friend {
     name: string;
     birthday: string;
-}
+  }
 
-interface GiftSuggestionResponse {
+  interface GiftSuggestionResponse {
     recipient: string;
     suggested_gift: string;
-}
+  }
 
-const suggestGift = async (friend: Friend): Promise<void> => {
+  const saveGift = async (gift: GiftSuggestionResponse) => {
+    await fetch(`${BACKEND_URL}/api/gift-history`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(gift),
+    });
+  };
+
+  const suggestGift = async (friend: Friend): Promise<void> => {
     try {
-        const res = await fetch('https://64d8b695c546.ngrok-free.app/api/suggest-gift', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: friend.name,
-                birthday: friend.birthday,
-                sentiment: 'close friend', // 🔧 Temporary placeholder
-            }),
-        });
+      const res = await fetch('https://64d8b695c546.ngrok-free.app/api/suggest-gift', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: friend.name,
+          birthday: friend.birthday,
+          sentiment: 'close friend', // 🔧 Temporary placeholder
+        }),
+      });
 
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-        const data: GiftSuggestionResponse = await res.json();
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const data: GiftSuggestionResponse = await res.json();
 
-        Alert.alert(`Gift for ${data.recipient}`, `🎁 ${data.suggested_gift}`);
+      Alert.alert(`Gift for ${data.recipient}`, `🎁 ${data.suggested_gift}`, [
+        {
+          text: 'Reject',
+          style: 'cancel',
+        },
+        {
+          text: 'Accept',
+          onPress: () => saveGift(data),
+        },
+      ]);
     } catch (err) {
-        console.error('Suggest error:', err);
-        Alert.alert('Error', 'Could not suggest a gift.');
+      console.error('Suggest error:', err);
+      Alert.alert('Error', 'Could not suggest a gift.');
     }
-};
+  };
 
   return (
     <View style={styles.container}>
@@ -75,17 +101,31 @@ const suggestGift = async (friend: Friend): Promise<void> => {
           data={friends}
           keyExtractor={(item, index) => `${item.name}-${index}`}
           renderItem={({ item }) => (
-            <View style={styles.friendItem}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.friendName}>{item.name}</Text>
-                <Text style={styles.friendBirthday}>🎂 {item.birthday}</Text>
-              </View>
-              <TouchableOpacity style={styles.button} onPress={() => suggestGift(item)}>
-                <Text style={styles.buttonText}>Suggest Gift</Text>
+            <Link href={`/friend-history/${item.name}`} asChild>
+              <TouchableOpacity
+                style={styles.friendItem}
+                // onPress={() => navigation.navigate('FriendHistory', { name: item.name })}
+                activeOpacity={0.8}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.friendName}>{item.name}</Text>
+                  <Text style={styles.friendBirthday}>🎂 {item.birthday}</Text>
+                </View>
+                <TouchableOpacity
+
+                  style={styles.button}
+                  onPress={(e) => {
+                    e.stopPropagation(); // Prevents triggering the outer touch
+                    suggestGift(item);
+                  }}
+                >
+                  <Text style={styles.buttonText}>Suggest Gift</Text>
+                </TouchableOpacity>
               </TouchableOpacity>
-            </View>
+            </Link>
           )}
         />
+
       )}
     </View>
   );

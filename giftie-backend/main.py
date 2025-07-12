@@ -1,32 +1,71 @@
 import random
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from pydantic import BaseModel
 from typing import List
 from datetime import date
+from typing import Dict
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 
 app = FastAPI()
 
-class Friend(BaseModel):
+class FriendCreate(SQLModel):
     name: str
-    birthday: date
+    birthday: date  # FastAPI will parse string → date here
+class Friend(FriendCreate, table=True):
+    id: int | None = Field(default=None, primary_key=True)
 
 class GiftRequest(BaseModel):
     name: str
-    birthday: date
+    # birthday: date
     sentiment: str  # e.g., "secret crush", "mentor"
-    
 
-# TEMPORARY in-memory store
-db: List[Friend] = []
+class GiftHistory(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    recipient: str
+    # birthday: date
+    sentiment: str
+    suggested_gift: str
 
-@app.post("/api/friends")
-def add_friend(friend: Friend):
-    db.append(friend)
-    return {"message": "Friend added", "friend": friend}
+sqlite_url = "sqlite:///./giftie.db"
+engine = create_engine(sqlite_url, echo=True)
 
-@app.get("/api/friends")
+# Create the table on startup
+SQLModel.metadata.create_all(engine)
+
+@app.post("/api/gift-history")
+def save_gift(gift: GiftHistory):
+    with Session(engine) as session:
+        session.add(gift)
+        session.commit()
+        session.refresh(gift)
+    return {"message": "Gift saved", "gift": gift}
+
+
+@app.get("/api/gift-history", response_model=list[GiftHistory])
+def get_gift_history(recipient: str = Query(None)):
+    with Session(engine) as session:
+        statement = select(GiftHistory)
+        if recipient:
+            statement = statement.where(GiftHistory.recipient == recipient)
+        results = session.exec(statement).all()
+    return results
+
+
+@app.post("/api/friends", response_model=Friend)
+def add_friend(friend_create: FriendCreate):
+    friend = Friend.from_orm(friend_create)
+    with Session(engine) as session:
+        session.add(friend)
+        session.commit()
+        session.refresh(friend)
+    return friend
+
+@app.get("/api/friends", response_model=list[Friend])
 def get_friends():
-    return db
+    with Session(engine) as session:
+        statement = select(Friend)
+        results = session.exec(statement).all()
+    return results
 
 @app.post("/api/suggest-gift")
 def suggest_gift(request: GiftRequest):
@@ -63,11 +102,6 @@ def suggest_gift(request: GiftRequest):
     }
 
     options = suggestions.get(sentiment.lower(), suggestions["default"])
-    print("Options:", options)
-    print("About to choose with random.choice")
-    gifts = ["gift 1", "gift 2", "gift 3"]
-    print(random.choice(gifts))
-
     suggestion = random.choice(options)
 
     return {

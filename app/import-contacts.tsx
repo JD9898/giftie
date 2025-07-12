@@ -1,5 +1,7 @@
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+export const BACKEND_URL = 'https://64d8b695c546.ngrok-free.app';
+
 export default function ImportContactsScreen() {
   const handleImport = async () => {
     const fakeFriend = {
@@ -8,18 +10,14 @@ export default function ImportContactsScreen() {
     };
 
     try {
-        const BACKEND_URL = 'https://64d8b695c546.ngrok-free.app'; 
-
-        const res = await fetch(`${BACKEND_URL}/api/friends`, {
+      const res = await fetch(`${BACKEND_URL}/api/friends`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            name: 'Emily Wong',
-            birthday: '2025-07-12',
+          name: 'Emily Wong',
+          birthday: '2025-07-12',
         }),
-    });
-
-
+      });
 
       if (res.ok) {
         Alert.alert('Imported', `${fakeFriend.name} added successfully!`);
