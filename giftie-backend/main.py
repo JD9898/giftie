@@ -1,12 +1,20 @@
+from http.client import HTTPException
 import random
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List
 from datetime import date
 from typing import Dict
 from sqlmodel import Field, Session, SQLModel, create_engine, select
+import stripe
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # load from .env
 
 app = FastAPI()
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 class FriendCreate(SQLModel):
     name: str
@@ -110,3 +118,53 @@ def suggest_gift(request: GiftRequest):
         "suggested_gift": suggestion
     }
 
+@app.post("/api/create-checkout-session")
+def create_checkout_session(recipient: str, gift: str, price: float):
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[
+                {
+                    "price_data": {
+                        "currency": "gbp",
+                        "product_data": {"name": f"Gift for {recipient}: {gift}"},
+                        "unit_amount": int(price * 100),  # price in pence
+                    },
+                    "quantity": 1,
+                }
+            ],
+            mode="payment",
+            success_url="https://your-frontend.com/success",
+            cancel_url="https://your-frontend.com/cancel",
+        )
+        return {"checkout_url": session.url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/create-checkout-session")
+async def create_checkout_session(request: Request):
+    data = await request.json()
+    recipient = data.get("recipient")
+    gift = data.get("gift")
+    price = data.get("price", 5.00)  # £5 default
+
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "gbp",
+                    "product_data": {
+                        "name": f"Gift for {recipient}: {gift}",
+                    },
+                    "unit_amount": int(price * 100),  # £5 → 500 pence
+                },
+                "quantity": 1,
+            }],
+            mode="payment",
+            success_url="https://example.com/success",
+            cancel_url="https://example.com/cancel",
+        )
+        return JSONResponse({"checkout_url": session.url})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})

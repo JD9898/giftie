@@ -1,6 +1,43 @@
-# Welcome to your Expo app 👋
+# 🎁 Giftie
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Giftie is an agentic mobile app that intelligently suggests, tracks, and helps order personalized gifts for your friends — ballerinas or not! With minimal user input, it can manage gift ideas, birthdays, sentiments, and payments via Stripe or manual options like PayPal.
+
+---
+
+## 📱 Features
+
+- Import and manage your friend list (with birthdays)
+- Suggest gifts based on relationship sentiment
+- Save gift suggestion history
+- Initiate gift orders via Stripe (Apple/Google Pay supported)
+- Manual payment links (PayPal.me / Revolut.me) also supported
+
+---
+
+## 🛠 Tech Stack
+
+- **Frontend**: React Native (via [Expo](https://expo.dev/))
+- **Backend**: FastAPI
+- **Database**: SQLite (via SQLModel)
+- **Payments**: Stripe Checkout (Apple Pay & Google Pay support)
+
+---
+
+## Run the backend
+
+```bash
+cd giftie-backend
+python3 -m venv env # skip if you have aleady build the virtual environment
+source env/bin/activate
+pip install -r requirements.txt # skip if you have aleady build the virtual environment
+```
+
+## Run the fastAPI server
+
+```bash
+uvicorn main:app --reload
+```
+
 
 ## Get started
 

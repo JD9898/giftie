@@ -2,12 +2,16 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
+    Linking,
     StyleSheet,
     Text,
+    TouchableOpacity,
     View,
 } from 'react-native';
 import { BACKEND_URL } from '../import-contacts'; // update path if needed
+
 
 type GiftHistoryItem = {
     suggested_gift: string;
@@ -51,6 +55,27 @@ export default function FriendHistoryScreen() {
         );
     }
 
+    const orderGift = async (gift: string, recipient: string) => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/create-checkout-session`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gift, recipient, price: 5.00 }), // Flat £5
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                Linking.openURL(data.checkout_url);
+            } else {
+                Alert.alert('Error', data.error || 'Unable to create checkout session');
+            }
+        } catch (err) {
+            Alert.alert('Network Error', 'Could not connect to backend.');
+            console.error(err);
+        }
+    };
+
     return (
         <View style={styles.container}>
             <Text style={styles.title}>🎁 Gift history for {safeName}</Text>
@@ -66,6 +91,13 @@ export default function FriendHistoryScreen() {
                         <View style={styles.giftItem}>
                             <Text style={styles.gift}>🎁 {item.suggested_gift}</Text>
                             <Text style={styles.sentiment}>💬 {item.sentiment}</Text>
+
+                            <TouchableOpacity
+                                style={styles.button}
+                                onPress={() => orderGift(item.suggested_gift, name)}
+                            >
+                                <Text style={styles.buttonText}>Order</Text>
+                            </TouchableOpacity>
                         </View>
                     )}
                 />
@@ -85,4 +117,12 @@ const styles = StyleSheet.create({
     },
     gift: { fontSize: 16 },
     sentiment: { fontSize: 14, color: '#555' },
+    button: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 6,
+        marginTop: 8,
+    },
+    buttonText: { fontSize: 16, color: '#fff', textAlign: 'center' },
 });

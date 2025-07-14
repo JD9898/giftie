@@ -39,3 +39,4 @@ yarn-error.*
 
 app-example
 giftie-backend/giftie.db
+.env

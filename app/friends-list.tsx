@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { BACKEND_URL } from './import-contacts';
 
@@ -24,7 +24,7 @@ export default function FriendsListScreen() {
 
   const fetchFriends = async () => {
     try {
-      const res = await fetch('https://64d8b695c546.ngrok-free.app/api/friends');
+      const res = await fetch(`${BACKEND_URL}/api/friends`);
       if (!res.ok) throw new Error(`Server error: ${res.status}`);
       const data = await res.json();
       setFriends(data);
@@ -60,7 +60,7 @@ export default function FriendsListScreen() {
 
   const suggestGift = async (friend: Friend): Promise<void> => {
     try {
-      const res = await fetch('https://64d8b695c546.ngrok-free.app/api/suggest-gift', {
+      const res = await fetch(`${BACKEND_URL}/api/suggest-gift`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,7 +104,7 @@ export default function FriendsListScreen() {
             <Link href={`/friend-history/${item.name}`} asChild>
               <TouchableOpacity
                 style={styles.friendItem}
-                // onPress={() => navigation.navigate('FriendHistory', { name: item.name })}
+                onPress={() => navigation.navigate('FriendHistory', { name: item.name })}
                 activeOpacity={0.8}
               >
                 <View style={{ flex: 1 }}>

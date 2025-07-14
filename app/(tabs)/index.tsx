@@ -4,15 +4,15 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>🎁 Wrapped</Text>
+      <Text style={styles.logo}>🎁 Giftie</Text>
       <Text style={styles.tagline}>Your smart gift assistant</Text>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={() => {}}>
+        <TouchableOpacity style={styles.button} onPress={() => { }}>
           <Text style={styles.buttonText}>➕ Add a Friend</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button} onPress={() => {}}>
+        <TouchableOpacity style={styles.button} onPress={() => { }}>
           <Text style={styles.buttonText}>🎁 Upcoming Gifts</Text>
         </TouchableOpacity>
 
