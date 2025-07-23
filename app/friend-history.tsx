@@ -14,7 +14,7 @@ type FriendHistoryScreenProps = {
 type GiftHistoryItem = {
     suggested_gift: string;
     sentiment: string;
-    // add other properties if needed
+    timestamp?: string;
 };
 
 const styles = StyleSheet.create({

@@ -1,12 +1,14 @@
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export const BACKEND_URL = 'https://58a4b1cb1637.ngrok-free.app';
+export const BACKEND_URL = 'https://c58df8c90b80.ngrok-free.app';
 
 export default function ImportContactsScreen() {
   const handleImport = async () => {
     const fakeFriend = {
       name: 'Emily Wong',
       birthday: '2025-07-12',
+      sentiment: 'Best friend',
+      email: 'jademinwei.wang@gmail.com'
     };
 
     try {
@@ -16,6 +18,8 @@ export default function ImportContactsScreen() {
         body: JSON.stringify({
           name: 'Emily Wong',
           birthday: '2025-07-12',
+          sentiment: 'Best friend',
+          email: 'jademinwei.wang@gmail.com'
         }),
       });
 

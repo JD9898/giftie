@@ -43,6 +43,8 @@ export default function FriendsListScreen() {
   interface Friend {
     name: string;
     birthday: string;
+    email?: string;
+    sentiment?: string;
   }
 
   interface GiftSuggestionResponse {
@@ -66,7 +68,7 @@ export default function FriendsListScreen() {
         body: JSON.stringify({
           name: friend.name,
           birthday: friend.birthday,
-          sentiment: 'close friend', // 🔧 Temporary placeholder
+          sentiment: 'close friend', // temporary placeholder
         }),
       });
 
@@ -104,7 +106,7 @@ export default function FriendsListScreen() {
             <Link href={`/friend-history/${item.name}`} asChild>
               <TouchableOpacity
                 style={styles.friendItem}
-                onPress={() => navigation.navigate('FriendHistory', { name: item.name })}
+                // onPress={() => navigation.navigate('FriendHistory', { name: item.name })}
                 activeOpacity={0.8}
               >
                 <View style={{ flex: 1 }}>
