@@ -1,19 +1,19 @@
-# 🎁 Giftie
+# Giftie 🎁
 
-Giftie is an agentic mobile app that intelligently suggests, tracks, and helps order personalized gifts for your friends — ballerinas or not! With minimal user input, it can manage gift ideas, birthdays, sentiments, and payments via Stripe or manual options like PayPal.
+Giftie is an agentic mobile app that intelligently suggests, tracks, and helps order personalized gifts for your friends! With minimal user input, it can manage gift ideas, birthdays, sentiments, and payments via Stripe.
 
 ---
 
-## 📱 Features
+## Features 📱
 
-- Import and manage your friend list (with birthdays)
+- Import and manage your friend list with birthdays
 - Suggest gifts based on relationship sentiment
 - Save gift suggestion history
 - Initiate gift orders via Stripe (Apple/Google Pay supported)
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack 🛠
 
 - **Frontend**: React Native (via [Expo](https://expo.dev/))
 - **Backend**: FastAPI
