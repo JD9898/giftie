@@ -1,3 +1,5 @@
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from http.client import HTTPException
 import random
 
@@ -17,6 +19,8 @@ import uuid
 from playwright.sync_api import sync_playwright
 import smtplib
 from email.message import EmailMessage
+import openai
+import base64
 
 load_dotenv()  # load from .env
 
@@ -26,6 +30,7 @@ stripe.api_key = os.getenv("STRIPE_KEY")
 class PostcardRequest(BaseModel):
     gift: str
     recipient: str
+    # recipient_email: EmailStr
 
 
 class FriendCreate(SQLModel):
@@ -48,6 +53,16 @@ class GiftHistory(SQLModel, table=True):
     # birthday: date
     sentiment: str
     suggested_gift: str
+
+class EmailPostcardRequest(BaseModel):
+    recipient_email: EmailStr
+    recipient_name: str
+    image_url: str
+
+class PostcardPrompt(BaseModel):
+    recipient: str
+    message: str
+    theme: str = 'birthday'
 
 sqlite_url = "sqlite:///./giftie.db"
 engine = create_engine(sqlite_url, echo=True)
@@ -192,38 +207,185 @@ def generate_postcard(data: PostcardRequest):
         page.screenshot(path=filepath)
         browser.close()
 
+    send_email_postcard()
     return { "image_url": f"/postcards/{filename}" }
 
-class EmailPostcardRequest(BaseModel):
-    recipient_email: EmailStr
-    recipient_name: str
-    image_url: str
+def send_email_postcard():
+    sender = os.getenv("SMTP_USER")
+    recipient = sender  # Send to yourself for testing
 
-@app.post("/api/email-postcard")
-def email_postcard(data: EmailPostcardRequest):
-    msg = EmailMessage()
-    msg['Subject'] = f"A Giftie Postcard for {data.recipient_name}"
-    msg['From'] = "youremail@example.com"
-    msg['To'] = data.recipient_email
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Test Email from Giftie"
+    msg["From"] = sender
+    msg["To"] = recipient
 
-    msg.set_content(
-        f"Hi {data.recipient_name},\n\nYou've received a postcard!\n\nView it here: {data.image_url}"
-    )
-
-    # Optional: embed image
-    msg.add_alternative(f"""
+    text = "Hi,\nThis is a test email from Giftie."
+    html = """
     <html>
-      <body>
-        <p>Hi {data.recipient_name},</p>
-        <p>You've received a postcard from Giftie:</p>
-        <img src="{data.image_url}" style="max-width: 100%;" />
-        <p>🎁</p>
-      </body>
+    <body>
+        <p>Hello,<br>
+        This is a <b>test</b> email from <i>Giftie</i>.
+        </p>
+    </body>
     </html>
-    """, subtype='html')
+    """
 
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-        smtp.login("youremail@example.com", "your-app-password")
-        smtp.send_message(msg)
+    # Encode both parts in UTF-8
+    part1 = MIMEText(text.encode('utf-8'), "plain", "utf-8")
+    part2 = MIMEText(html.encode('utf-8'), "html", "utf-8")
 
-    return {"message": "Postcard sent successfully!"}
+    msg.attach(part1)
+    msg.attach(part2)
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(sender, os.getenv("SMTP_PASS"))
+            server.sendmail(sender, recipient, msg.as_string())
+        print("✅ Email sent successfully.")
+    except Exception as e:
+        print(f"❌ Failed to send email: {e}")
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def generate_personal_message(prompt: str) -> str:
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a friendly and creative postcard writer. Keep it short, warm, and heartfelt."
+                },
+                {
+                    "role": "user",
+                    "content": f"Write a short postcard message for: {prompt}"
+                }
+            ],
+            max_tokens=100,
+            temperature=0.8,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print("OpenAI error:", e)
+        return "Hope this little surprise brightens your day! 🎁"
+
+def get_styled_html(recipient: str, message: str, theme: str = "birthday") -> str:
+    decorations = {
+        "birthday": {
+            "bg_color": "#FFF5E1",
+            "emoji": "🎉🎂🎈",
+            "image": "https://i.imgur.com/Fn1jftF.png",  # birthday balloons
+        },
+        "friendship": {
+            "bg_color": "#E6F7FF",
+            "emoji": "🤗💖✨",
+            "image": "https://i.imgur.com/9xR5z7m.png",  # hearts
+        },
+        "love": {
+            "bg_color": "#FFE6E6",
+            "emoji": "💌❤️🌹",
+            "image": "https://i.imgur.com/x1P5sB8.png",  # romantic
+        }
+    }
+
+    style = decorations.get(theme, decorations["birthday"])
+
+    return f"""
+    <html>
+    <head>
+      <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500&display=swap" rel="stylesheet">
+      <style>
+        body {{
+          font-family: 'Quicksand', sans-serif;
+          background: linear-gradient(to bottom right, #fceabb, #f8b500);
+          width: 600px;
+          height: 400px;
+          position: relative;
+          padding: 40px;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+        }}
+        .image-decor {{
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 600px;
+          height: 400px;
+          opacity: 0.2;
+          z-index: 0;
+        }}
+        .content {{
+          z-index: 1;
+        }}
+        h1 {{
+          font-size: 28px;
+          margin-bottom: 10px;
+        }}
+        p {{
+          font-size: 18px;
+          color: #333;
+        }}
+      </style>
+    </head>
+    <body>
+      <div class="content">
+        <h1>{style['emoji']} Dear {recipient},</h1>
+        <p>{message}</p>
+        <p style="margin-top: 20px;">From your Giftie app 🎁</p>
+      </div>
+    </body>
+    </html>
+    """
+
+def get_unsplash_background(gift: str) -> str:
+    keywords = {
+        "birthday": "birthday",
+        "chocolate": "dessert",
+        "flowers": "flowers",
+        "book": "reading",
+        "coffee": "coffee",
+        "love": "romantic",
+        "jewellery": "luxury",
+    }
+
+    for keyword, theme in keywords.items():
+        if keyword in gift.lower():
+            return f"https://source.unsplash.com/1200x800/?{theme}"
+
+    # default fallback
+    return "https://source.unsplash.com/1200x800/?gift"
+
+def get_base64_image(path: str) -> str:
+    with open(path, "rb") as img_file:
+        encoded = base64.b64encode(img_file.read()).decode("utf-8")
+        return f"data:image/png;base64,{encoded}"
+
+@app.post("/api/generate-custom-postcard")
+def generate_custom_postcard(prompt: PostcardPrompt):
+    output_dir = "postcards"
+    os.makedirs(output_dir, exist_ok=True)
+
+    html = get_styled_html(prompt.recipient, prompt.message, prompt.theme)
+
+    filename = f"{uuid.uuid4().hex}.png"
+    filepath = os.path.join(output_dir, filename)
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            context = browser.new_context(
+                viewport={"width": 600, "height": 400},  
+                device_scale_factor=2.0  
+            )
+            page = context.new_page()
+            page.set_content(html)
+            page.screenshot(path=filepath, full_page=True)
+            browser.close()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to render postcard: {e}")
+
+    return {"image_url": f"/postcards/{filename}"}

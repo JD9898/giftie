@@ -3,3 +3,5 @@ uvicorn
 stripe
 sqlmodel
 python-dotenv
+email-validator
+playwright

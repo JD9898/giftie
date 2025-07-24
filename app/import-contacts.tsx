@@ -1,6 +1,6 @@
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export const BACKEND_URL = 'https://c58df8c90b80.ngrok-free.app';
+export const BACKEND_URL = 'https://86ca108cc09b.ngrok-free.app';
 
 export default function ImportContactsScreen() {
   const handleImport = async () => {

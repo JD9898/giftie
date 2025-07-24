@@ -39,5 +39,5 @@ yarn-error.*
 
 app-example
 giftie-backend/giftie.db
-giftie-backend/postcard/
+giftie-backend/postcards/
 .env

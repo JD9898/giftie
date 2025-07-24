@@ -88,7 +88,7 @@ export default function FriendHistoryScreen() {
             const data = await res.json();
 
             if (res.ok && data.image_url) {
-                Linking.openURL(data.image_url); // opens the rendered postcard image
+                Linking.openURL(data.image_url);
             } else {
                 Alert.alert('Error', data.error || 'Unable to generate postcard.');
             }
@@ -97,6 +97,29 @@ export default function FriendHistoryScreen() {
             console.error(err);
         }
     };
+
+    const generateCustomPostcard = async (recipient: string, message: string) => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/generate-custom-postcard`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ recipient, message }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.image_url) {
+                const absoluteUrl = `${BACKEND_URL}${data.image_url}`;
+                Linking.openURL(absoluteUrl); // Opens the generated postcard image
+            } else {
+                Alert.alert('Error', data.error || 'Unable to generate postcard.');
+            }
+        } catch (err) {
+            Alert.alert('Network Error', 'Could not connect to backend.');
+            console.error(err);
+        }
+    };
+
 
     const emailPostcard = async (imageUrl: string, recipientName: string, recipientEmail: string) => {
         try {
@@ -144,22 +167,23 @@ export default function FriendHistoryScreen() {
                                     style={styles.button}
                                     onPress={() => orderGift(item.suggested_gift, safeName)}
                                 >
-                                    <Text style={styles.buttonText}>Order</Text>
+                                    <Text style={styles.buttonText}>💸 Order</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
                                     style={[styles.button, { backgroundColor: '#AA66CC' }]}
                                     onPress={() => generatePostcard(item.suggested_gift, safeName)}
                                 >
-                                    <Text style={styles.buttonText}>Postcard</Text>
+                                    <Text style={styles.buttonText}>📮 Postcard</Text>
                                 </TouchableOpacity>
 
-                                {/* <TouchableOpacity
+                                <TouchableOpacity
                                     style={[styles.button, { backgroundColor: '#FF9500' }]}
-                                    onPress={() => emailPostcard(item.image_url, safeName, 'jademinwei.wang@gmail.com')}
+                                    // onPress={() => emailPostcard(item.image_url, safeName, 'jademinwei.wang@gmail.com')}
+                                    onPress={() => generateCustomPostcard(safeName, `Happy birthday ${safeName}! Enjoy your gift of ${item.suggested_gift}.`)}
                                 >
                                     <Text style={styles.buttonText}>📧 Email</Text>
-                                </TouchableOpacity> */}
+                                </TouchableOpacity>
                             </View>
                         </View>
                     )}
